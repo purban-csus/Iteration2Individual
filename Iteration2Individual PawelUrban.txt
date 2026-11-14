@@ -1,0 +1,55 @@
+Pawel Urban
+
+First I had to look up how to connect the Cloudflare database to the worker. It required configuring the wrangler.json file as follows:
+{
+	"d1_databases": 
+	[
+		{
+			"binding": "DB",
+			"database_name": "project-db",
+			"database_id": "c39d18f9-c940-4498-9cab-d55d270fd18d"
+		}
+	]
+}
+This ensured that with every upload, the database would stay connected to the worker.
+
+I also created the SQL syntax that created the tables. Cloudflare required a file called 
+schema.sql to be created. I set primary keys to auto incrament to avoid duplicates. Also none
+of the columns allow for null values because they are needed for login validation and proper 
+storage of both steps and calories values. Because of frequent edits to the table, they were set 
+up to be easily dropped and created. The "IF NOT EXISTS" was particularly userful because it
+allowed for the tables to be created without having to explicitly do it.
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_health (
+    health_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    entry_date TEXT NOT NULL,
+    steps INTEGER NOT NULL DEFAULT 0,
+    calories INTEGER NOT NULL DEFAULT 0,
+
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    UNIQUE (user_id, entry_date)
+);
+
+
+Lastly I had to follow the CLoudflare tutorials on how to properly store data using INSERT and 
+retrieve data using SELECT statements. These statements were then added to the python API which allowed
+storing and receiving data using the HTML pages. Here is an example:
+
+INSERT INTO daily_health (user_id, entry_date, calories)
+this inserts data into 3 columns of the table daily_health
+
+VALUES (?, date('now', '-8 hours'), ?)
+this enters the first variable which is the user_id the date formated to use pacific time, and the second variable the calories
+
+ON CONFLICT (user_id, entry_date)
+if the user_id and date are already filled, instead of inserting, the next line just updates the calories
+
+DO UPDATE SET calories = daily_health.calories + excluded.calories
+this adds the data being inserted to the data that was already present in the table
