@@ -46,7 +46,7 @@ INSERT INTO daily_health (user_id, entry_date, calories)
 this inserts data into 3 columns of the table daily_health
 
 VALUES (?, date('now', '-8 hours'), ?)
-this enters the first variable which is the user_id the date formated to use pacific time, and the second variable the calories
+this enters the first variable which is the user_id the date formatted to use pacific time, and the second variable the calories
 
 ON CONFLICT (user_id, entry_date)
 if the user_id and date are already filled, instead of inserting, the next line just updates the calories
